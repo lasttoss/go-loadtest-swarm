@@ -26,7 +26,8 @@ type Options struct {
 	// Now is the clock the latencies are measured against. Defaults to the wall clock; a test hands in
 	// a function that returns the times it wants, and then a p99 is a fact rather than a hope. Every
 	// client calls it, so it has to be safe to call from several goroutines at once - which the wall
-	// clock is and a test clock counting its calls is not, until it says so.
+	// clock is and a test clock counting its calls is not, until it says so. A test clock that pairs one
+	// reading with the next will only measure the first client correctly, for the same reason.
 	Now func() time.Time
 	// Progress is called once a second with the running totals, for a run a human is watching.
 	Progress func(elapsed time.Duration, requests, failures uint64)

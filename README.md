@@ -121,7 +121,10 @@ make smoke     # builds the CLI and runs a real scenario against a local server,
 ```
 
 There is no server in the tests: the engine takes a `Doer` and a clock, so a run of a thousand requests
-takes milliseconds and the p50 is a fact rather than a hope.
+takes milliseconds and the p50 is a fact rather than a hope - and the suite is run both with `-race` and
+without, because a clock a test hands in pairs its readings in a different order under each. That is how
+a p50 of 988ms in a test that says every request took 10ms was found: `go test -race ./...` passed and
+the plain `go test .` that CI ran did not.
 
 ## What this is not
 

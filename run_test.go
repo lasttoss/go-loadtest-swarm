@@ -29,6 +29,11 @@ func answer(status int) *http.Response {
 // clockWithLatency is the seam that makes this testable: the run measures every request against the
 // clock it was handed, so a test can say "each of these took 10ms" and then assert that the p50 is
 // 10ms - rather than hoping the machine was quiet.
+//
+// It pairs its readings two at a time, so a test using it must use one client: two clients calling one
+// clock interleave their before and after readings, and then a request "takes" the reading of somebody
+// else's request. That is what this looked like the first time - a p50 of 988ms, under `go test` and not
+// under `go test -race`, because the race detector happened to serialise the calls.
 func clockWithLatency(d time.Duration) func() time.Time {
 	epoch := time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC)
 	var calls atomic.Int64 // every client calls the clock, so a test clock has to be safe to call at once
@@ -51,7 +56,8 @@ func scenarioFor(clients int, duration time.Duration) loadtest.Scenario {
 }
 
 func TestARunMakesRequestsAndReportsTheirLatency(t *testing.T) {
-	report, err := loadtest.Run(context.Background(), scenarioFor(2, 80*time.Millisecond), loadtest.Options{
+	// One client, on purpose: see clockWithLatency.
+	report, err := loadtest.Run(context.Background(), scenarioFor(1, 80*time.Millisecond), loadtest.Options{
 		Doer: doerFunc(func(*http.Request) (*http.Response, error) { return answer(200), nil }),
 		Now:  clockWithLatency(10 * time.Millisecond),
 	})
