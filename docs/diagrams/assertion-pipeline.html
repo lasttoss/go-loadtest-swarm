@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>A load test that can fail a build</title>
+<style>
+  :root { --ink:#151412; --paper:#f7f4ee; --rule:#cfc7b8; --red:#b3261e; --green:#1a6b3c; --amber:#8a5a00; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink);
+         font:16px/1.5 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  .sheet { max-width:1080px; margin:0 auto; padding:56px 40px 72px; }
+  .kicker { font:600 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--amber); }
+  h1 { font-size:38px; line-height:1.15; margin:.35em 0 .2em; letter-spacing:-.01em; }
+  .dek { font-size:19px; color:#463f36; max-width:76ch; margin:0 0 8px; }
+  .meta { font:12px/1.6 ui-monospace, Menlo, monospace; color:#6b6357; border-top:1px solid var(--rule);
+          padding-top:10px; margin-top:22px; }
+  svg { display:block; width:100%; height:auto; margin:34px 0 0; }
+  .pairs { display:grid; grid-template-columns:1fr 1fr; gap:26px; margin-top:34px; }
+  .card { border-left:4px solid var(--ink); padding:14px 0 14px 18px; background:#fffdf8; }
+  .card b { display:block; font-size:12px; letter-spacing:.12em; text-transform:uppercase; margin-bottom:6px; }
+  .card p { margin:0; font-size:17px; } .card p + p { margin-top:7px; }
+  footer { margin-top:38px; font:12px/1.7 ui-monospace, Menlo, monospace; color:#6b6357;
+           border-top:1px solid var(--rule); padding-top:12px; }
+  text { font-family:"Iowan Old Style", Palatino, Georgia, serif; }
+  .mono { font-family:ui-monospace, Menlo, monospace; }
+</style>
+<div class="sheet">
+  <div class="kicker">Tooling · go-loadtest-swarm</div>
+  <h1>A load test that can fail a build</h1>
+  <p class="dek">A number in a README is a claim. This harness turns the claim into an assertion: a YAML
+    scenario decides what “good” means, the run measures it, and the exit code is the answer — so a
+    regression stops a pipeline instead of being read by nobody.</p>
+  <div class="meta">measured: 5,653 requests from 4 clients in 3s · p95 3 ms · 3 failures (0.05%) ·
+    exit 0 · and on a server that drops connections, exit 1</div>
+
+  <svg viewBox="0 0 1040 560" role="img" aria-label="A scenario is validated, run by one worker per client, each measuring its own histogram, merged and reduced to nearest-rank percentiles, then checked against assertions that decide the exit code">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#151412"/></marker>
+      <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#1a6b3c"/></marker>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#b3261e"/></marker>
+    </defs>
+
+    <!-- the pipeline strip -->
+    <text x="20" y="30" font-size="12" letter-spacing="1.5" fill="#6b6357" class="mono">WHAT HAPPENS, IN ORDER</text>
+    <rect x="20" y="44" width="180" height="76" rx="4" fill="#fffdf8" stroke="#151412"/>
+    <text x="34" y="70" font-size="13" font-weight="600">scenario.yaml</text>
+    <text x="34" y="90" font-size="11" class="mono">clients · ramp</text>
+    <text x="34" y="106" font-size="11" class="mono">assertions (KnownFields)</text>
+
+    <rect x="225" y="44" width="180" height="76" rx="4" fill="#fffdf8" stroke="#151412"/>
+    <text x="239" y="70" font-size="13" font-weight="600">Validate()</text>
+    <text x="239" y="90" font-size="11" class="mono">ramp &gt; duration?</text>
+    <text x="239" y="106" font-size="11" class="mono">before a client starts</text>
+
+    <rect x="430" y="44" width="180" height="76" rx="4" fill="#eef5ef" stroke="#1a6b3c" stroke-width="2"/>
+    <text x="444" y="70" font-size="13" font-weight="600">Run</text>
+    <text x="444" y="90" font-size="11" class="mono">ramp splits clients</text>
+    <text x="444" y="106" font-size="11" class="mono">evenly over the ramp</text>
+
+    <rect x="635" y="44" width="180" height="76" rx="4" fill="#eef5ef" stroke="#1a6b3c" stroke-width="2"/>
+    <text x="649" y="70" font-size="13" font-weight="600">one worker / client</text>
+    <text x="649" y="90" font-size="11" class="mono">its own histogram</text>
+    <text x="649" y="106" font-size="11" class="mono">atomic counters</text>
+
+    <rect x="840" y="44" width="180" height="76" rx="4" fill="#fffdf8" stroke="#151412"/>
+    <text x="854" y="70" font-size="13" font-weight="600">nearest-rank</text>
+    <text x="854" y="90" font-size="11" class="mono">buckets 1% wide</text>
+    <text x="854" y="106" font-size="11" class="mono">no interpolation</text>
+
+    <path d="M200 82 L225 82" stroke="#151412" stroke-width="2" marker-end="url(#a)"/>
+    <path d="M405 82 L430 82" stroke="#151412" stroke-width="2" marker-end="url(#a)"/>
+    <path d="M610 82 L635 82" stroke="#151412" stroke-width="2" marker-end="url(#a)"/>
+    <path d="M815 82 L840 82" stroke="#151412" stroke-width="2" marker-end="url(#a)"/>
+
+    <!-- verdict -->
+    <rect x="20" y="150" width="1000" height="92" rx="4" fill="#fffdf8" stroke="#151412"/>
+    <text x="36" y="174" font-size="13" class="mono" fill="#6b6357">THE VERDICT</text>
+    <text x="36" y="198" font-size="14" class="mono">Markdown report <tspan fill="#6b6357">(printed even when the run fails, because a failing run is the one worth reading)</tspan></text>
+    <path d="M36 214 L470 214" stroke="#1a6b3c" stroke-width="2" marker-end="url(#ag)"/>
+    <text x="40" y="232" font-size="14" class="mono" fill="#1a6b3c">exit 0 · every assertion held</text>
+    <path d="M520 214 L900 214" stroke="#b3261e" stroke-width="2" marker-end="url(#ar)"/>
+    <text x="524" y="232" font-size="14" class="mono" fill="#b3261e">exit 1 · an assertion failed · exit 2 · the scenario was wrong, nothing ran</text>
+
+    <!-- two cards drawn -->
+    <rect x="20" y="262" width="490" height="118" rx="4" fill="#fdeeed" stroke="#b3261e"/>
+    <text x="36" y="288" font-size="14" font-weight="600" fill="#b3261e">A mean hides the run</text>
+    <text x="36" y="312" font-size="13">p50 2 ms next to a max of 11 ms is a server that is fine</text>
+    <text x="36" y="332" font-size="13">most of the time. The same harness against a server that</text>
+    <text x="36" y="352" font-size="13">drops connections read p99.9 1.05 s — and exited 1.</text>
+
+    <rect x="530" y="262" width="490" height="118" rx="4" fill="#eef5ef" stroke="#1a6b3c"/>
+    <text x="546" y="288" font-size="14" font-weight="600" fill="#1a6b3c">Why one histogram per client</text>
+    <text x="546" y="312" font-size="13">400 clients sharing one histogram would measure the</text>
+    <text x="546" y="332" font-size="13">contention of the harness, not the latency of the</text>
+    <text x="546" y="352" font-size="13">server: each keeps its own, and they merge at the end.</text>
+
+    <!-- measurements -->
+    <rect x="20" y="400" width="1000" height="126" rx="4" fill="#fffdf8" stroke="#cfc7b8"/>
+    <text x="36" y="424" font-size="12" class="mono" fill="#6b6357">MEASURED · make smoke, against the two servers in this repository</text>
+    <text x="36" y="452" font-size="14" class="mono">smoke-server (Go)     <tspan fill="#1a6b3c">5,653 requests · p50 2 ms · p95 3 ms · p99 5 ms · max 11 ms · 3 failures (0.05%)</tspan></text>
+    <text x="36" y="478" font-size="14" class="mono">http.server (python)  <tspan fill="#b3261e">6,359 requests · 20 failures · p99.9 1.05 s</tspan>  →  <tspan fill="#b3261e">exit 1</tspan></text>
+    <text x="36" y="504" font-size="13" class="mono" fill="#6b6357">the second row is the point: the assertion is what turned a bad number into a failed build</text>
+    <text x="36" y="522" font-size="13" class="mono" fill="#6b6357">scenario: examples/smoke.yaml · p95 ≤ 250 ms · max_error_rate 1% · min_rps 100</text>
+  </svg>
+
+  <div class="pairs">
+    <div class="card">
+      <b>4xx is not a failure</b>
+      <p>A scenario pointing at the wrong path or sending a stale token did not find a bug in the server:
+        it is counted as <span class="mono">Rejected</span>, separately, so that a report sends the reader to
+        the right place.</p>
+    </div>
+    <div class="card">
+      <b>Percentiles from buckets</b>
+      <p>Keeping every sample is a memory leak at 100k requests/s, and throwing samples away loses the tail.
+        Buckets 1% wide put the p99 within half a percent of the truth, which is the accuracy a build gate
+        can act on.</p>
+    </div>
+  </div>
+
+  <footer>
+    Sources: docs/diagrams/assertion-pipeline.mmd for the Mermaid version, histogram.go for the buckets,
+    run.go for the workers and the merge, examples/smoke.yaml for the assertions. `make diagram` exports a
+    PNG if a browser is present.
+  </footer>
+</div>
+</html>

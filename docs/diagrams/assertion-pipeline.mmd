@@ -1,0 +1,12 @@
+%% Source for docs/diagrams/assertion-pipeline.html
+%% A load test that can fail a build: scenario -> run -> histogram -> nearest-rank -> assertions -> exit code.
+flowchart LR
+  Y["scenario.yaml<br/>clients, ramp, duration, assertions"] --> V["Validate()<br/>before a client starts"]
+  V --> R["Run<br/>ramp splits clients evenly"]
+  R --> W["one worker per client<br/>its own histogram"]
+  W --> M["Merge at the end<br/>one lock, not 400"]
+  M --> P["nearest-rank percentile<br/>buckets 1% wide"]
+  P --> A{"Assertions<br/>p95 · error rate · rps"}
+  A -->|pass| Z["exit 0"]
+  A -->|fail| O["exit 1 · report still printed"]
+  A -->|bad scenario| T["exit 2 · nothing was run"]

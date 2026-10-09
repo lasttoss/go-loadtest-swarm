@@ -135,3 +135,17 @@ one process, which is what one machine can open, and the report says how many cl
 ## License
 
 MIT. See `LICENSE`, and `PROVENANCE.md` for where this code comes from.
+
+## The pipeline as a picture
+
+`docs/diagrams/assertion-pipeline.html` draws what the sample output above only shows the end of: the
+scenario that decides what "good" means, the ramp that spreads clients over it, one worker per client with
+its own histogram, the merge at the end, and the nearest-rank percentiles that the assertions — and
+therefore the exit code — are computed from.
+
+It also carries the two rows that make the point better than prose: 5,653 requests at p50 2 ms against the
+Go smoke server, and the same harness against `python3 -m http.server` reading p99.9 1.05 s and exiting 1.
+The second row is why the exit code exists.
+
+`docs/diagrams/assertion-pipeline.mmd` is the Mermaid version; `make diagram` exports a PNG if a browser is
+present, because the source is what gets reviewed.
