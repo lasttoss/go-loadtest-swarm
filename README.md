@@ -138,6 +138,22 @@ MIT. See `LICENSE`, and `PROVENANCE.md` for where this code comes from.
 
 ## The pipeline as a picture
 
+```mermaid
+%% Source for docs/diagrams/assertion-pipeline.html
+%% A load test that can fail a build: scenario -> run -> histogram -> nearest-rank -> assertions -> exit code.
+flowchart LR
+  Y["scenario.yaml<br/>clients, ramp, duration, assertions"] --> V["Validate()<br/>before a client starts"]
+  V --> R["Run<br/>ramp splits clients evenly"]
+  R --> W["one worker per client<br/>its own histogram"]
+  W --> M["Merge at the end<br/>one lock, not 400"]
+  M --> P["nearest-rank percentile<br/>buckets 1% wide"]
+  P --> A{"Assertions<br/>p95 · error rate · rps"}
+  A -->|pass| Z["exit 0"]
+  A -->|fail| O["exit 1 · report still printed"]
+  A -->|bad scenario| T["exit 2 · nothing was run"]
+```
+
+
 `docs/diagrams/assertion-pipeline.html` draws what the sample output above only shows the end of: the
 scenario that decides what "good" means, the ramp that spreads clients over it, one worker per client with
 its own histogram, the merge at the end, and the nearest-rank percentiles that the assertions — and
