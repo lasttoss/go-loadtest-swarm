@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Formatting
+        run: test -z "$(gofmt -l .)" || { echo "these files are not gofmt'd:"; gofmt -l .; exit 1; }
+      - run: go vet ./...
+      - run: go build ./...
+      - name: Tests, with the race detector
+        run: go test -race -count=1 -timeout 180s ./...
+      - name: Coverage of the library
+        # The engine and the histogram are the parts a wrong answer would be invisible in, so they are
+        # the parts whose coverage has to stay up. The two commands are exercised end to end by the
+        # step below instead, which is worth more than a line count.
+        run: |
+          go test -coverprofile=coverage.out .
+          percent=$(go tool cover -func=coverage.out | tail -1 | awk '{gsub("%","",$3); print $3}')
+          echo "coverage is ${percent}%"
+          awk -v p="$percent" 'BEGIN { if (p+0 < 80) { print "coverage below 80%"; exit 1 } }'
+      - name: A real run against a real server
+        # The end-to-end claim: the scenario reader, the client loop, the report and the exit code, in
+        # the one combination the unit tests cannot make - a server over a socket.
+        run: |
+          go build -o bin/loadtest ./cmd/loadtest
+          go build -o bin/smoke-server ./cmd/smoke-server
+          ./bin/smoke-server >/dev/null 2>&1 &
+          server=$!
+          sleep 1
+          ./bin/loadtest -scenario examples/smoke.yaml
+          status=$?
+          kill $server 2>/dev/null || true
+          exit $status

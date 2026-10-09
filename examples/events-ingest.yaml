@@ -1,0 +1,23 @@
+# A load test is a claim about a server, so the claim is a file: this one says the events endpoint
+# holds 30ms p95 while fifty clients post at it for half a minute, and it fails the run if it does not.
+#
+#   go run ./cmd/loadtest -scenario examples/events-ingest.yaml
+#
+name: events ingest
+target:
+  url: http://localhost:8080/v1/events
+  method: post
+  headers:
+    content-type: application/json
+  body: '{"events":[{"user":"player-1","kind":"level_up","value":12}]}'
+  timeout: 5s
+load:
+  clients: 50
+  duration: 30s
+  ramp: 5s
+  think: 100ms
+assert:
+  p95: 50ms
+  p99: 150ms
+  max_error_rate: 0.01
+  min_rps: 400

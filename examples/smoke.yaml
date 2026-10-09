@@ -1,0 +1,14 @@
+# What the smoke test runs: this repository's own client against cmd/smoke-server, four clients for
+# three seconds. It is here rather than in a test file because the point is to exercise the command
+# line, the scenario reader, the histogram and the exit code together, over a real socket.
+name: local smoke
+target:
+  url: http://127.0.0.1:18080/
+load:
+  clients: 4
+  duration: 3s
+  ramp: 300ms
+assert:
+  p95: 250ms
+  max_error_rate: 0.01
+  min_rps: 100
