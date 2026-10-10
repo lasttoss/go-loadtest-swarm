@@ -132,29 +132,31 @@ Not a driver for every protocol yet: the engine takes an HTTP client, and a WebS
 plugs into the same `Doer` seam without the reporting changing. Not a distributed load generator either -
 one process, which is what one machine can open, and the report says how many clients it was.
 
+## Repository standard
+
+Six items, applied where they mean something rather than everywhere. The exclusions are the point of
+the table: an item that cannot be honest in a repository of this kind is left out and said so.
+
+| Item | Here |
+|---|---|
+| `docker-compose.yml` | not applicable - the harness runs next to the thing it measures; putting it inside the cluster would make the cluster measure itself |
+| `Dockerfile` | not applicable - same reason |
+| Helm chart | not applicable - same reason |
+| Diagram | ✓ `docs/figures/assertion-pipeline.html` plus the exported PNG the README embeds |
+| Tests, run in CI | ✓ Formatting, Tests, with the race detector, Coverage of the library, A real run against a real server |
+| CI + `Makefile` | ✓ `.github/workflows/ci.yml` and `Makefile` |
+
 ## License
 
 MIT. See `LICENSE`, and `PROVENANCE.md` for where this code comes from.
 
 ## The pipeline as a picture
 
-```mermaid
-%% Source for docs/diagrams/assertion-pipeline.html
-%% A load test that can fail a build: scenario -> run -> histogram -> nearest-rank -> assertions -> exit code.
-flowchart LR
-  Y["scenario.yaml<br/>clients, ramp, duration, assertions"] --> V["Validate()<br/>before a client starts"]
-  V --> R["Run<br/>ramp splits clients evenly"]
-  R --> W["one worker per client<br/>its own histogram"]
-  W --> M["Merge at the end<br/>one lock, not 400"]
-  M --> P["nearest-rank percentile<br/>buckets 1% wide"]
-  P --> A{"Assertions<br/>p95 · error rate · rps"}
-  A -->|pass| Z["exit 0"]
-  A -->|fail| O["exit 1 · report still printed"]
-  A -->|bad scenario| T["exit 2 · nothing was run"]
-```
+![A scenario is validated, run by one worker per client, each measuring its own histogram, merged and reduced to nearest-rank percentiles, then checked against assertions that decide the exit code](docs/figures/assertion-pipeline.png)
 
+**Figure 1.** A load test that can fail a build
 
-`docs/diagrams/assertion-pipeline.html` draws what the sample output above only shows the end of: the
+`docs/figures/assertion-pipeline.html` draws what the sample output above only shows the end of: the
 scenario that decides what "good" means, the ramp that spreads clients over it, one worker per client with
 its own histogram, the merge at the end, and the nearest-rank percentiles that the assertions — and
 therefore the exit code — are computed from.
@@ -163,5 +165,5 @@ It also carries the two rows that make the point better than prose: 5,653 reques
 Go smoke server, and the same harness against `python3 -m http.server` reading p99.9 1.05 s and exiting 1.
 The second row is why the exit code exists.
 
-`docs/diagrams/assertion-pipeline.mmd` is the Mermaid version; `make diagram` exports a PNG if a browser is
-present, because the source is what gets reviewed.
+The figure is embedded above as a PNG; `docs/figures/assertion-pipeline.html` is the source it is exported
+from, because the source is what gets reviewed.
