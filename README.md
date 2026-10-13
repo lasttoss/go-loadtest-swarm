@@ -94,6 +94,8 @@ either a memory leak or a lost tail, so a value goes into the bucket for the nex
 - `Percentile` is nearest-rank: the p95 of a hundred samples is the ninety-fifth of them, not an
   interpolation between two that no player felt.
 
+How to use it for sizing is in [`docs/capacity-model.md`](docs/capacity-model.md): the same server measured at two client traffic profiles, and why a single core-per-thousand-players figure is wrong by a factor of three.
+
 Each client keeps its own histogram and they are merged at the end, because one lock shared by four
 hundred clients is a load test measuring its own contention.
 
