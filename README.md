@@ -1,5 +1,7 @@
 # go-loadtest-swarm
 
+[![ci](https://github.com/lasttoss/go-loadtest-swarm/actions/workflows/ci.yml/badge.svg)](https://github.com/lasttoss/go-loadtest-swarm/actions/workflows/ci.yml)
+
 A load test for game backends that can fail a build: a YAML scenario, a latency histogram accurate to
 1%, a report that goes into a pull request, and an exit code.
 
