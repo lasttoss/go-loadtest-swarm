@@ -15,6 +15,10 @@ go run ./cmd/loadtest -scenario examples/events-ingest.yaml
 A load test whose result nobody can fail is a demonstration. This one is written so that the number it
 prints is the number that decides whether the branch merges.
 
+**Where to look first:** [`run.go`](run.go) drives one scenario, [`histogram.go`](histogram.go) keeps the
+histogram the report prints, and [`docs/capacity-model.md`](docs/capacity-model.md) turns those numbers into a
+fleet size. `go run ./cmd/loadtest -scenario examples/events-ingest.yaml` is the shortest path to a report.
+
 ## What a run looks like
 
 Against a local server, four clients for three seconds - the server is `cmd/smoke-server`, and the
